@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timezone Changes Tracker</title>
+    <style>
+        :root {
+            --accent-color: #ffa500;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'JetBrains Mono', monospace;
+            line-height: 1.4;
+            color: #ddd;
+            background: #000;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #111;
+            border: 1px solid #333;
+        }
+
+        header {
+            background: #222;
+            color: #fff;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .filters {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+
+        .filters-label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }
+
+        .filter-item input[type="checkbox"] {
+            width: 12px;
+            height: 12px;
+            accent-color: var(--accent-color);
+        }
+
+        .filter-item label {
+            color: #ccc;
+            cursor: pointer;
+        }
+        
+        .city-filter {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+        
+        .city-filter-label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .city-filter input {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 6px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            width: 200px;
+        }
+        
+        .city-filter input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+        
+        .city-filter input::placeholder {
+            color: #666;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: normal;
+        }
+
+        .subtitle {
+            opacity: 0.7;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .section {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section h2 {
+            color: #fff;
+            font-size: 14px;
+            font-weight: normal;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .event {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .event.recent {
+            border-left: 2px solid #ff6b6b;
+        }
+
+        .event.upcoming {
+            border-left: 2px solid var(--accent-color);
+        }
+
+        .event-date {
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .event-details {
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .event-timezone {
+            color: var(--accent-color);
+        }
+
+        .event-group {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .event-group.recent {
+            border-left: 2px solid #ff6b6b;
+        }
+
+        .event-group.upcoming {
+            border-left: 2px solid var(--accent-color);
+        }
+
+        .event-group:hover {
+            background: #222;
+        }
+
+        .event-count {
+            color: #888;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: #000;
+            border: 1px solid var(--accent-color);
+            padding: 8px;
+            font-size: 10px;
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+            line-height: 1.3;
+        }
+
+        .tooltip-header {
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 4px;
+        }
+
+        .tooltip-cities {
+            color: #ccc;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .update-time {
+            text-align: center;
+            padding: 10px;
+            font-size: 10px;
+            color: #666;
+            background: #0a0a0a;
+            border-top: 1px solid #333;
+        }
+
+        .built-by {
+            text-align: center;
+            padding: 15px;
+            font-size: 10px;
+            color: #555;
+            background: #0a0a0a;
+            border-top: 1px solid #333;
+        }
+
+        .built-by a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .built-by a:hover {
+            text-decoration: underline;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #333;
+            border-left: 1px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>timezone-tracker</h1>
+            <p class="subtitle">daylight saving time transitions</p>
+
+            <div class="filters">
+                <div class="filters-label">filter by continent</div>
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <input type="checkbox" id="africa" checked>
+                        <label for="africa">africa</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="america" checked>
+                        <label for="america">america</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="antarctica" checked>
+                        <label for="antarctica">antarctica</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="arctic" checked>
+                        <label for="arctic">arctic</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="asia" checked>
+                        <label for="asia">asia</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="atlantic" checked>
+                        <label for="atlantic">atlantic</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="australia" checked>
+                        <label for="australia">australia</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="europe" checked>
+                        <label for="europe">europe</label>
+                    </div>
+                    <div class="filter-item">
+                        <input type="checkbox" id="pacific" checked>
+                        <label for="pacific">pacific</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="city-filter">
+                <div class="city-filter-label">filter by city</div>
+                <input type="text" id="city-filter-input" placeholder="e.g. london, new york, tokyo...">
+            </div>
+        </header>
+
+        <div class="section">
+            <h2>recent changes</h2>
+            <div id="recent-events">
+                <div class="no-events">no recent timezone changes (last 30 days)</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>upcoming changes</h2>
+            <div id="upcoming-events">
+                <div id="upcoming-loading" class="loading">
+                    <div class="spinner"></div>
+                    loading upcoming timezone transitions...
+                </div>
+            </div>
+        </div>
+
+        <div class="update-time" id="update-time"></div>
+
+        <div class="built-by">
+            built by <a href="https://pert.dev" target="_blank">rupert carr</a> •
+            <a href="https://x.com/rupert648" target="_blank">@rupert648</a>
+        </div>
+    </div>
+
+    <script>
+        class TimezoneTracker {
+            constructor() {
+                this.events = [];
+                this.init();
+            }
+
+            async init() {
+                // Set up filter event listeners
+                this.setupFilters();
+                // Start processing in background
+                this.loadTimezoneEventsAsync();
+            }
+
+            setupFilters() {
+                const checkboxes = document.querySelectorAll('.filter-item input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        this.renderWithFilters();
+                    });
+                });
+                
+                // Setup city filter
+                const cityFilterInput = document.getElementById('city-filter-input');
+                if (cityFilterInput) {
+                    cityFilterInput.addEventListener('input', () => {
+                        this.renderWithFilters();
+                    });
+                }
+            }
+
+            getEnabledContinents() {
+                const checkboxes = document.querySelectorAll('.filter-item input[type="checkbox"]');
+                return Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.id.toLowerCase());
+            }
+
+            filterEventsByContinent(events) {
+                const enabledContinents = this.getEnabledContinents();
+                return events.filter(event => {
+                    const continent = event.timezone.split('/')[0].toLowerCase();
+                    return enabledContinents.includes(continent);
+                });
+            }
+
+            getCityFilter() {
+                const cityFilterInput = document.getElementById('city-filter-input');
+                return cityFilterInput ? cityFilterInput.value.toLowerCase().trim() : '';
+            }
+
+            filterEventsByCity(events) {
+                const cityFilter = this.getCityFilter();
+                if (!cityFilter) return events;
+                
+                return events.filter(event => {
+                    const city = event.timezone.split('/').pop().replace(/_/g, ' ').toLowerCase();
+                    return city.includes(cityFilter);
+                });
+            }
+
+            groupEvents(events) {
+                const groups = {};
+
+                events.forEach(event => {
+                    const continent = event.timezone.split('/')[0];
+                    const dateKey = event.date.toDateString();
+                    const changeKey = `${event.type}-${event.offset}h`;
+                    const groupKey = `${dateKey}-${changeKey}-${continent}`;
+
+                    if (!groups[groupKey]) {
+                        groups[groupKey] = {
+                            date: event.date,
+                            type: event.type,
+                            offset: event.offset,
+                            description: event.description,
+                            continent: continent,
+                            cities: [],
+                            count: 0
+                        };
+                    }
+
+                    // Extract city name from timezone
+                    const city = event.timezone.split('/').pop().replace(/_/g, ' ');
+                    groups[groupKey].cities.push(city);
+                    groups[groupKey].count++;
+                });
+
+                return Object.values(groups).sort((a, b) => a.date.getTime() - b.date.getTime());
+            }
+
+            async loadTimezoneEventsAsync() {
+                const timezones = Intl.supportedValuesOf('timeZone');
+                const now = new Date();
+                const lookBackDays = 365;
+                const lookAheadDays = 120;
+
+                const startDate = new Date(now.getTime() - (lookBackDays * 24 * 60 * 60 * 1000));
+                const endDate = new Date(now.getTime() + (lookAheadDays * 24 * 60 * 60 * 1000));
+
+                console.log(`Processing ${timezones.length} timezones from ${startDate.toDateString()} to ${endDate.toDateString()}`);
+
+                let processedCount = 0;
+                const batchSize = 20; // Process 20 timezones at a time
+
+                for (let i = 0; i < timezones.length; i += batchSize) {
+                    const batch = timezones.slice(i, i + batchSize);
+
+                    // Process batch
+                    for (const timezone of batch) {
+                        try {
+                            const transitions = this.findTransitions(timezone, startDate, endDate);
+                            this.events.push(...transitions);
+                        } catch (error) {
+                            console.warn(`Error processing ${timezone}:`, error);
+                        }
+                        processedCount++;
+                    }
+
+                    // Update progress and render current results
+                    const progress = Math.round((processedCount / timezones.length) * 100);
+                    this.updateProgress(progress);
+
+                    // Sort events by date before rendering
+                    this.events.sort((a, b) => a.date.getTime() - b.date.getTime());
+                    this.render();
+
+                    // Allow UI to update between batches
+                    if (i + batchSize < timezones.length) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
+                }
+
+                console.log(`Found ${this.events.length} total timezone transitions`);
+                this.renderComplete();
+            }
+
+            updateProgress(progress) {
+                const upcomingLoader = document.getElementById('upcoming-loading');
+
+                if (upcomingLoader) {
+                    upcomingLoader.innerHTML = `<div class="spinner"></div>processing timezones... ${progress}%`;
+                }
+            }
+
+            findTransitions(timezone, startDate, endDate) {
+                const transitions = [];
+                const current = new Date(startDate);
+                let debugCount = 0;
+
+                // Add specific debugging for known DST zones
+                const isDebugZone = ['America/New_York', 'Europe/London', 'Europe/Paris', 'Europe/Dublin'].includes(timezone);
+
+                while (current <= endDate) {
+                    const today = new Date(current);
+                    const tomorrow = new Date(current.getTime() + 24 * 60 * 60 * 1000);
+
+                    const todayOffset = this.getTimezoneOffsetBetter(today, timezone);
+                    const tomorrowOffset = this.getTimezoneOffsetBetter(tomorrow, timezone);
+
+                    if (isDebugZone && debugCount < 5) {
+                        console.log(`${timezone} - ${today.toDateString()}: ${todayOffset}h -> ${tomorrowOffset}h`);
+                        debugCount++;
+                    }
+
+                    if (todayOffset !== tomorrowOffset) {
+                        const rawOffsetChange = tomorrowOffset - todayOffset;
+                        // Round to nearest 0.5 to handle floating point precision issues
+                        const offsetChange = Math.round(rawOffsetChange * 2) / 2;
+                        const changeType = offsetChange > 0 ? 'Spring Forward' : 'Fall Back';
+                        const timeChange = Math.abs(offsetChange);
+
+                        console.log(`FOUND TRANSITION: ${timezone} on ${tomorrow.toDateString()} - ${changeType} (${offsetChange}h)`);
+
+                        transitions.push({
+                            date: new Date(tomorrow),
+                            timezone: timezone,
+                            type: changeType,
+                            offset: offsetChange,
+                            description: `${changeType} - ${timeChange}h ${offsetChange > 0 ? 'forward' : 'backward'}`,
+                            displayName: this.getTimezoneDisplayName(timezone)
+                        });
+                    }
+
+                    current.setDate(current.getDate() + 1);
+                }
+
+                if (transitions.length > 0) {
+                    console.log(`${timezone}: Found ${transitions.length} transitions`);
+                }
+
+                return transitions;
+            }
+
+            getTimezoneOffset(date, timezone) {
+                // Use the standard method to get timezone offset in minutes
+                const utc1 = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+                const utc2 = new Date(utc1.toLocaleString("en-US", {timeZone: timezone}));
+                return (utc1.getTime() - utc2.getTime()) / (1000 * 60 * 60);
+            }
+
+            // Better method using Intl.DateTimeFormat
+            getTimezoneOffsetBetter(date, timezone) {
+                const formatter = new Intl.DateTimeFormat('en', {
+                    timeZone: timezone,
+                    timeZoneName: 'longOffset'
+                });
+                const parts = formatter.formatToParts(date);
+                const offsetPart = parts.find(part => part.type === 'timeZoneName');
+                if (offsetPart) {
+                    const match = offsetPart.value.match(/GMT([+-])(\d{2}):(\d{2})/);
+                    if (match) {
+                        const sign = match[1] === '+' ? 1 : -1;
+                        const hours = parseInt(match[2]);
+                        const minutes = parseInt(match[3]);
+                        return sign * (hours + minutes / 60);
+                    }
+                }
+                // Fallback to original method
+                return this.getTimezoneOffset(date, timezone);
+            }
+
+            getTimezoneDisplayName(timezone) {
+                try {
+                    const formatter = new Intl.DisplayNames(['en'], {type: 'region'});
+                    const parts = timezone.split('/');
+                    if (parts.length >= 2) {
+                        const city = parts[parts.length - 1].replace(/_/g, ' ');
+                        const region = parts[0];
+                        return `${city} (${region})`;
+                    }
+                    return timezone;
+                } catch {
+                    return timezone.replace(/_/g, ' ');
+                }
+            }
+
+            render() {
+                if (this.events.length === 0) return;
+
+                const now = new Date();
+                const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+                
+                // Filter recent events to only last 60 days
+                const recentEvents = this.events.filter(event => 
+                    event.date <= now && event.date >= sixtyDaysAgo
+                );
+                const upcomingEvents = this.events.filter(event => event.date > now);
+
+                // Apply continent and city filters, then group
+                const continentFilteredRecent = this.filterEventsByContinent(recentEvents);
+                const continentFilteredUpcoming = this.filterEventsByContinent(upcomingEvents);
+                const filteredRecent = this.filterEventsByCity(continentFilteredRecent);
+                const filteredUpcoming = this.filterEventsByCity(continentFilteredUpcoming);
+                const groupedRecent = this.groupEvents(filteredRecent);
+                const groupedUpcoming = this.groupEvents(filteredUpcoming);
+
+                if (groupedRecent.length > 0) {
+                    this.renderGroupedEvents('recent-events', groupedRecent.slice(-10), 'recent', false);
+                }
+                this.renderGroupedEvents('upcoming-events', groupedUpcoming.slice(0, 20), 'upcoming', false);
+            }
+
+            renderComplete() {
+                const now = new Date();
+                const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+
+                // Filter recent events to only last 60 days  
+                const recentEvents = this.events.filter(event => 
+                    event.date <= now && event.date >= sixtyDaysAgo
+                );
+                const upcomingEvents = this.events.filter(event => event.date > now);
+
+                console.log(`Final: Recent events (last 60 days): ${recentEvents.length}, Upcoming events: ${upcomingEvents.length}`);
+
+                // Apply continent and city filters, then group
+                const continentFilteredRecent = this.filterEventsByContinent(recentEvents);
+                const continentFilteredUpcoming = this.filterEventsByContinent(upcomingEvents);
+                const filteredRecent = this.filterEventsByCity(continentFilteredRecent);
+                const filteredUpcoming = this.filterEventsByCity(continentFilteredUpcoming);
+                const groupedRecent = this.groupEvents(filteredRecent);
+                const groupedUpcoming = this.groupEvents(filteredUpcoming);
+                
+                console.log(`Grouped recent events: ${groupedRecent.length}, Grouped upcoming: ${groupedUpcoming.length}`);
+
+                // Show last 10 recent events
+                if (groupedRecent.length > 0) {
+                    this.renderGroupedEvents('recent-events', groupedRecent.slice(-10), 'recent', true);
+                } else {
+                    document.getElementById('recent-events').innerHTML = '<div class="no-events">no recent timezone changes (last 60 days)</div>';
+                }
+                
+                this.renderGroupedEvents('upcoming-events', groupedUpcoming.slice(0, 20), 'upcoming', true);
+
+                document.getElementById('update-time').textContent =
+                    `last updated: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+            }
+
+            renderWithFilters() {
+                if (this.events.length === 0) return;
+
+                const now = new Date();
+                const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+
+                // Filter recent events to only last 60 days
+                const recentEvents = this.events.filter(event => 
+                    event.date <= now && event.date >= sixtyDaysAgo
+                );
+                const upcomingEvents = this.events.filter(event => event.date > now);
+
+                // Apply continent and city filters, then group
+                const continentFilteredRecent = this.filterEventsByContinent(recentEvents);
+                const continentFilteredUpcoming = this.filterEventsByContinent(upcomingEvents);
+                const filteredRecent = this.filterEventsByCity(continentFilteredRecent);
+                const filteredUpcoming = this.filterEventsByCity(continentFilteredUpcoming);
+                const groupedRecent = this.groupEvents(filteredRecent);
+                const groupedUpcoming = this.groupEvents(filteredUpcoming);
+
+                // Show last 10 recent events
+                if (groupedRecent.length > 0) {
+                    this.renderGroupedEvents('recent-events', groupedRecent.slice(-10), 'recent', true);
+                } else {
+                    document.getElementById('recent-events').innerHTML = '<div class="no-events">no recent timezone changes (last 60 days)</div>';
+                }
+
+                this.renderGroupedEvents('upcoming-events', groupedUpcoming.slice(0, 20), 'upcoming', true);
+            }
+
+            renderEvents(containerId, events, type, isComplete) {
+                const container = document.getElementById(containerId);
+
+                if (events.length === 0 && isComplete) {
+                    container.innerHTML = '<div class="no-events">no events found</div>';
+                    return;
+                } else if (events.length === 0) {
+                    // Keep showing loading animation
+                    return;
+                }
+
+                const eventsHtml = events.map(event => `
+                    <div class="event ${type}">
+                        <div class="event-date">
+                            ${event.date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })}
+                        </div>
+                        <div class="event-details">
+                            ${event.description} at 02:00 local time
+                        </div>
+                        <div class="event-timezone">${event.displayName}</div>
+                    </div>
+                `).join('');
+
+                // Add progress indicator if not complete
+                const progressHtml = !isComplete ?
+                    '<div class="loading"><div class="spinner"></div>loading more events...</div>' : '';
+
+                container.innerHTML = eventsHtml + progressHtml;
+            }
+
+            renderGroupedEvents(containerId, eventGroups, type, isComplete) {
+                const container = document.getElementById(containerId);
+
+                if (eventGroups.length === 0 && isComplete) {
+                    container.innerHTML = '<div class="no-events">no events found</div>';
+                    return;
+                } else if (eventGroups.length === 0) {
+                    return;
+                }
+
+                const groupsHtml = eventGroups.map(group => {
+                    const cityList = group.cities.join(', ');
+                    const countText = group.count > 1 ? ` (${group.count} cities)` : '';
+
+                    return `
+                        <div class="event-group ${type}" 
+                             onmouseenter="this.querySelector('.tooltip').style.display='block'"
+                             onmouseleave="this.querySelector('.tooltip').style.display='none'">
+                            <div class="event-date">
+                                ${group.date.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    })}
+                            </div>
+                            <div class="event-details">
+                                ${group.description} at 02:00 local time
+                            </div>
+                            <div class="event-timezone">
+                                ${group.continent}${countText}
+                            </div>
+                            <div class="tooltip">
+                                <div class="tooltip-header">affected cities:</div>
+                                <div class="tooltip-cities">${cityList}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const progressHtml = !isComplete ?
+                    '<div class="loading"><div class="spinner"></div>loading more events...</div>' : '';
+
+                container.innerHTML = groupsHtml + progressHtml;
+            }
+        }
+
+        // Initialize the tracker when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TimezoneTracker();
+        });
+    </script>
+</body>
+
+</html>
