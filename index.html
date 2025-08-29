@@ -108,6 +108,70 @@
         .city-filter input::placeholder {
             color: #666;
         }
+        
+        .view-toggle {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+            text-align: center;
+        }
+        
+        .view-toggle button {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .view-toggle button:hover {
+            background: #333;
+        }
+        
+        .view-toggle button.active {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+        }
+        
+        .json-view {
+            display: none;
+            padding: 20px;
+            background: #0a0a0a;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #ccc;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .json-copy-button {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ccc;
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-left: 10px;
+        }
+        
+        .json-copy-button:hover {
+            background: #333;
+        }
+        
+        .json-copy-button.copied {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+        }
 
         h1 {
             font-size: 18px;
@@ -337,23 +401,35 @@
                 <div class="city-filter-label">filter by city</div>
                 <input type="text" id="city-filter-input" placeholder="e.g. london, new york, tokyo...">
             </div>
+            
+            <div class="view-toggle">
+                <button id="view-normal" class="active">normal view</button>
+                <button id="view-json">json view</button>
+                <button id="json-copy-btn" class="json-copy-button" style="display: none;">copy json</button>
+            </div>
         </header>
 
-        <div class="section">
-            <h2>recent changes</h2>
-            <div id="recent-events">
-                <div class="no-events">no recent timezone changes (last 30 days)</div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>upcoming changes</h2>
-            <div id="upcoming-events">
-                <div id="upcoming-loading" class="loading">
-                    <div class="spinner"></div>
-                    loading upcoming timezone transitions...
+        <div id="normal-view">
+            <div class="section">
+                <h2>recent changes</h2>
+                <div id="recent-events">
+                    <div class="no-events">no recent timezone changes (last 60 days)</div>
                 </div>
             </div>
+
+            <div class="section">
+                <h2>upcoming changes</h2>
+                <div id="upcoming-events">
+                    <div id="upcoming-loading" class="loading">
+                        <div class="spinner"></div>
+                        loading upcoming timezone transitions...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="json-view" class="json-view">
+            Loading JSON data...
         </div>
 
         <div class="update-time" id="update-time"></div>
@@ -374,6 +450,7 @@
             async init() {
                 // Set up filter event listeners
                 this.setupFilters();
+                this.setupViewToggle();
                 // Start processing in background
                 this.loadTimezoneEventsAsync();
             }
@@ -393,6 +470,49 @@
                         this.renderWithFilters();
                     });
                 }
+            }
+
+            setupViewToggle() {
+                const normalBtn = document.getElementById('view-normal');
+                const jsonBtn = document.getElementById('view-json');
+                const normalView = document.getElementById('normal-view');
+                const jsonView = document.getElementById('json-view');
+                const copyBtn = document.getElementById('json-copy-btn');
+
+                normalBtn.addEventListener('click', () => {
+                    normalBtn.classList.add('active');
+                    jsonBtn.classList.remove('active');
+                    normalView.style.display = 'block';
+                    jsonView.style.display = 'none';
+                    copyBtn.style.display = 'none';
+                });
+
+                jsonBtn.addEventListener('click', () => {
+                    jsonBtn.classList.add('active');
+                    normalBtn.classList.remove('active');
+                    normalView.style.display = 'none';
+                    jsonView.style.display = 'block';
+                    copyBtn.style.display = 'inline-block';
+                    this.updateJsonView();
+                });
+
+                copyBtn.addEventListener('click', () => {
+                    const jsonContent = jsonView.textContent;
+                    navigator.clipboard.writeText(jsonContent).then(() => {
+                        copyBtn.textContent = 'copied!';
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => {
+                            copyBtn.textContent = 'copy';
+                            copyBtn.classList.remove('copied');
+                        }, 2000);
+                    }).catch(() => {
+                        // Fallback for older browsers
+                        copyBtn.textContent = 'failed';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'copy';
+                        }, 2000);
+                    });
+                });
             }
 
             getEnabledContinents() {
@@ -690,6 +810,11 @@
                 }
 
                 this.renderGroupedEvents('upcoming-events', groupedUpcoming.slice(0, 20), 'upcoming', true);
+
+                // Update JSON view if it's currently visible
+                if (document.getElementById('json-view').style.display !== 'none') {
+                    this.updateJsonView();
+                }
             }
 
             renderEvents(containerId, events, type, isComplete) {
@@ -740,6 +865,9 @@
                 const groupsHtml = eventGroups.map(group => {
                     const cityList = group.cities.join(', ');
                     const countText = group.count > 1 ? ` (${group.count} cities)` : '';
+                    
+                    // Generate current times for cities in this group
+                    const currentTimes = this.getCurrentTimesForGroup(group);
 
                     return `
                         <div class="event-group ${type}" 
@@ -762,6 +890,8 @@
                             <div class="tooltip">
                                 <div class="tooltip-header">affected cities:</div>
                                 <div class="tooltip-cities">${cityList}</div>
+                                <div class="tooltip-header" style="margin-top: 8px;">current times:</div>
+                                <div class="tooltip-cities">${currentTimes}</div>
                             </div>
                         </div>
                     `;
@@ -771,6 +901,91 @@
                     '<div class="loading"><div class="spinner"></div>loading more events...</div>' : '';
 
                 container.innerHTML = groupsHtml + progressHtml;
+            }
+
+            getCurrentTimesForGroup(group) {
+                const now = new Date();
+                const times = [];
+                
+                // Get unique timezones for this group (since cities might share timezones)
+                const uniqueTimezones = [...new Set(group.cities.map(city => {
+                    // Reconstruct timezone from continent and city
+                    return `${group.continent}/${city.replace(/ /g, '_')}`;
+                }))];
+                
+                // Limit to first 3 timezones to avoid clutter
+                const timezonesToShow = uniqueTimezones.slice(0, 3);
+                
+                timezonesToShow.forEach(timezone => {
+                    try {
+                        const timeString = now.toLocaleTimeString('en-US', {
+                            timeZone: timezone,
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                        const city = timezone.split('/').pop().replace(/_/g, ' ');
+                        times.push(`${city}: ${timeString}`);
+                    } catch (error) {
+                        // Skip invalid timezones
+                        console.warn(`Could not get time for ${timezone}:`, error);
+                    }
+                });
+                
+                // Add "..." if there are more cities
+                if (uniqueTimezones.length > 3) {
+                    times.push(`... and ${uniqueTimezones.length - 3} more`);
+                }
+                
+                return times.join(', ');
+            }
+
+            updateJsonView() {
+                const now = new Date();
+                const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+
+                // Filter events same as normal view
+                const recentEvents = this.events.filter(event => 
+                    event.date <= now && event.date >= sixtyDaysAgo
+                );
+                const upcomingEvents = this.events.filter(event => event.date > now);
+
+                // Apply filters
+                const continentFilteredRecent = this.filterEventsByContinent(recentEvents);
+                const continentFilteredUpcoming = this.filterEventsByContinent(upcomingEvents);
+                const filteredRecent = this.filterEventsByCity(continentFilteredRecent);
+                const filteredUpcoming = this.filterEventsByCity(continentFilteredUpcoming);
+
+                // Create JSON structure
+                const jsonData = {
+                    last_updated: now.toISOString(),
+                    filters: {
+                        continents: this.getEnabledContinents(),
+                        city: this.getCityFilter() || null
+                    },
+                    recent_events: filteredRecent.slice(-10).reverse().map(event => ({
+                        date: event.date.toISOString(),
+                        timezone: event.timezone,
+                        type: event.type,
+                        offset_change: event.offset,
+                        description: event.description
+                    })),
+                    upcoming_events: filteredUpcoming.slice(0, 20).map(event => ({
+                        date: event.date.toISOString(),
+                        timezone: event.timezone,
+                        type: event.type,
+                        offset_change: event.offset,
+                        description: event.description
+                    })),
+                    summary: {
+                        total_recent: filteredRecent.length,
+                        total_upcoming: filteredUpcoming.length,
+                        total_timezones_processed: new Set(this.events.map(e => e.timezone)).size
+                    }
+                };
+
+                const jsonView = document.getElementById('json-view');
+                jsonView.textContent = JSON.stringify(jsonData, null, 2);
             }
         }
 
