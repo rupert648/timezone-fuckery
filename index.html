@@ -75,13 +75,13 @@
             color: #ccc;
             cursor: pointer;
         }
-        
+
         .city-filter {
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #333;
         }
-        
+
         .city-filter-label {
             font-size: 11px;
             color: #888;
@@ -89,7 +89,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        
+
         .city-filter input {
             background: #1a1a1a;
             border: 1px solid #333;
@@ -99,23 +99,23 @@
             font-size: 11px;
             width: 200px;
         }
-        
+
         .city-filter input:focus {
             outline: none;
             border-color: var(--accent-color);
         }
-        
+
         .city-filter input::placeholder {
             color: #666;
         }
-        
+
         .view-toggle {
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #333;
             text-align: center;
         }
-        
+
         .view-toggle button {
             background: #1a1a1a;
             border: 1px solid #333;
@@ -127,17 +127,17 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        
+
         .view-toggle button:hover {
             background: #333;
         }
-        
+
         .view-toggle button.active {
             background: var(--accent-color);
             color: #000;
             border-color: var(--accent-color);
         }
-        
+
         .json-view {
             display: none;
             padding: 20px;
@@ -149,7 +149,7 @@
             white-space: pre-wrap;
             overflow-x: auto;
         }
-        
+
         .json-copy-button {
             background: #1a1a1a;
             border: 1px solid #333;
@@ -162,11 +162,11 @@
             letter-spacing: 1px;
             margin-left: 10px;
         }
-        
+
         .json-copy-button:hover {
             background: #333;
         }
-        
+
         .json-copy-button.copied {
             background: var(--accent-color);
             color: #000;
@@ -396,12 +396,12 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="city-filter">
                 <div class="city-filter-label">filter by city</div>
                 <input type="text" id="city-filter-input" placeholder="e.g. london, new york, tokyo...">
             </div>
-            
+
             <div class="view-toggle">
                 <button id="view-normal" class="active">normal view</button>
                 <button id="view-json">json view</button>
@@ -427,7 +427,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="json-view" class="json-view">
             Loading JSON data...
         </div>
@@ -437,6 +437,7 @@
         <div class="built-by">
             built by <a href="https://pert.dev" target="_blank">rupert carr</a> •
             <a href="https://x.com/rupert648" target="_blank">@rupert648</a>
+            <a href="https://github.com/rupert648/timezone-fuckery" target="_blank">GitHub</a>
         </div>
     </div>
 
@@ -462,7 +463,7 @@
                         this.renderWithFilters();
                     });
                 });
-                
+
                 // Setup city filter
                 const cityFilterInput = document.getElementById('city-filter-input');
                 if (cityFilterInput) {
@@ -538,7 +539,7 @@
             filterEventsByCity(events) {
                 const cityFilter = this.getCityFilter();
                 if (!cityFilter) return events;
-                
+
                 return events.filter(event => {
                     const city = event.timezone.split('/').pop().replace(/_/g, ' ').toLowerCase();
                     return city.includes(cityFilter);
@@ -726,9 +727,9 @@
 
                 const now = new Date();
                 const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
-                
+
                 // Filter recent events to only last 60 days
-                const recentEvents = this.events.filter(event => 
+                const recentEvents = this.events.filter(event =>
                     event.date <= now && event.date >= sixtyDaysAgo
                 );
                 const upcomingEvents = this.events.filter(event => event.date > now);
@@ -752,7 +753,7 @@
                 const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
 
                 // Filter recent events to only last 60 days  
-                const recentEvents = this.events.filter(event => 
+                const recentEvents = this.events.filter(event =>
                     event.date <= now && event.date >= sixtyDaysAgo
                 );
                 const upcomingEvents = this.events.filter(event => event.date > now);
@@ -766,7 +767,7 @@
                 const filteredUpcoming = this.filterEventsByCity(continentFilteredUpcoming);
                 const groupedRecent = this.groupEvents(filteredRecent);
                 const groupedUpcoming = this.groupEvents(filteredUpcoming);
-                
+
                 console.log(`Grouped recent events: ${groupedRecent.length}, Grouped upcoming: ${groupedUpcoming.length}`);
 
                 // Show last 10 recent events
@@ -775,7 +776,7 @@
                 } else {
                     document.getElementById('recent-events').innerHTML = '<div class="no-events">no recent timezone changes (last 60 days)</div>';
                 }
-                
+
                 this.renderGroupedEvents('upcoming-events', groupedUpcoming.slice(0, 20), 'upcoming', true);
 
                 document.getElementById('update-time').textContent =
@@ -789,7 +790,7 @@
                 const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
 
                 // Filter recent events to only last 60 days
-                const recentEvents = this.events.filter(event => 
+                const recentEvents = this.events.filter(event =>
                     event.date <= now && event.date >= sixtyDaysAgo
                 );
                 const upcomingEvents = this.events.filter(event => event.date > now);
@@ -865,7 +866,7 @@
                 const groupsHtml = eventGroups.map(group => {
                     const cityList = group.cities.join(', ');
                     const countText = group.count > 1 ? ` (${group.count} cities)` : '';
-                    
+
                     // Generate current times for cities in this group
                     const currentTimes = this.getCurrentTimesForGroup(group);
 
@@ -906,16 +907,16 @@
             getCurrentTimesForGroup(group) {
                 const now = new Date();
                 const times = [];
-                
+
                 // Get unique timezones for this group (since cities might share timezones)
                 const uniqueTimezones = [...new Set(group.cities.map(city => {
                     // Reconstruct timezone from continent and city
                     return `${group.continent}/${city.replace(/ /g, '_')}`;
                 }))];
-                
+
                 // Limit to first 3 timezones to avoid clutter
                 const timezonesToShow = uniqueTimezones.slice(0, 3);
-                
+
                 timezonesToShow.forEach(timezone => {
                     try {
                         const timeString = now.toLocaleTimeString('en-US', {
@@ -931,12 +932,12 @@
                         console.warn(`Could not get time for ${timezone}:`, error);
                     }
                 });
-                
+
                 // Add "..." if there are more cities
                 if (uniqueTimezones.length > 3) {
                     times.push(`... and ${uniqueTimezones.length - 3} more`);
                 }
-                
+
                 return times.join(', ');
             }
 
@@ -945,7 +946,7 @@
                 const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
 
                 // Filter events same as normal view
-                const recentEvents = this.events.filter(event => 
+                const recentEvents = this.events.filter(event =>
                     event.date <= now && event.date >= sixtyDaysAgo
                 );
                 const upcomingEvents = this.events.filter(event => event.date > now);
